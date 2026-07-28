@@ -1,0 +1,10 @@
+==================================================
+MODEL EVALUATION RESULTS
+==================================================
+
+MAE (Mean Absolute Error): 1.3588
+MSE (Mean Squared Error): 3.0197
+RMSE (Root Mean Squared Error): 1.7377
+R2 Score: 0.9944
+
+==================================================

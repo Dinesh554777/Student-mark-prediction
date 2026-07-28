@@ -1,0 +1,62 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+*.egg
+dist/
+build/
+eggs/
+*.whl
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Virtual Environment
+venv/
+env/
+.venv/
+.env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Environment Variables
+.env
+.env.local
+.env.production
+
+# ML Models ( regenerated)
+# models/*.pkl
+
+# Outputs ( regenerated)
+# outputs/*.png
+# outputs/*.txt
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+
+# Dataset ( regenerated)
+# dataset/*.csv
+
+# Uploads
+backend/uploads/
+
+# Node.js (React frontend)
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Build artifacts
+*.log
+*.tmp
+*.temp
