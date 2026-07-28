@@ -1,4 +1,4 @@
-import { useState, useEffect, createContext, useContext } from "react";
+import React, { useState, useEffect, createContext, useContext } from "react";
 import { BrowserRouter as Router, Routes, Route, NavLink } from "react-router-dom";
 import { Home, BarChart3, Upload, History, Settings, Sun, Moon, Menu, X } from "lucide-react";
 import HomePage from "./pages/Home";
@@ -10,45 +10,34 @@ import NotFoundPage from "./pages/NotFound";
 import "./App.css";
 
 const ThemeContext = createContext();
-
 export function useTheme() {
   return useContext(ThemeContext);
 }
 
-function ErrorBoundary({ children }) {
-  const [error, setError] = useState(null);
-  if (error) {
-    return (
-      <div className="card" style={{ textAlign: "center", padding: 60 }}>
-        <h2 style={{ color: "var(--error-text)", marginBottom: 12 }}>Something went wrong</h2>
-        <p style={{ color: "var(--text-muted)" }}>{error.message}</p>
-        <button className="btn btn-primary" style={{ marginTop: 16 }} onClick={() => setError(null)}>
-          Try Again
-        </button>
-      </div>
-    );
-  }
-  return <ErrorCatcher onError={setError}>{children}</ErrorCatcher>;
-}
-
-class ErrorCatcher extends React.Component {
+class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false };
+    this.state = { error: null };
   }
-  static getDerivedStateFromError() {
-    return { hasError: true };
-  }
-  componentDidCatch(error) {
-    this.props.onError(error);
+  static getDerivedStateFromError(error) {
+    return { error };
   }
   render() {
-    if (this.state.hasError) return null;
+    if (this.state.error) {
+      return (
+        <div className="card" style={{ textAlign: "center", padding: 60, margin: 40 }}>
+          <h2 style={{ color: "var(--error-text)", marginBottom: 12 }}>Something went wrong</h2>
+          <p style={{ color: "var(--text-muted)" }}>{this.state.error.message}</p>
+          <button className="btn btn-primary" style={{ marginTop: 16 }}
+            onClick={() => this.setState({ error: null })}>
+            Try Again
+          </button>
+        </div>
+      );
+    }
     return this.props.children;
   }
 }
-
-import React from "react";
 
 function App() {
   const [theme, setTheme] = useState(() => localStorage.getItem("theme") || "light");

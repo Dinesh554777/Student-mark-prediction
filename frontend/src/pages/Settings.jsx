@@ -1,13 +1,14 @@
 import { useState } from "react";
-import { retrainModel } from "../api";
+import { retrainModel, clearHistory } from "../api";
 
 export default function SettingsPage() {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [toast, setToast] = useState(null);
 
   const handleRetrain = async () => {
-    if (!confirm("Are you sure you want to retrain the model?")) return;
+    if (!confirm("Retrain the model? This will overwrite the existing model.")) return;
     setLoading(true);
     setError("");
     try {
@@ -20,24 +21,32 @@ export default function SettingsPage() {
     }
   };
 
+  const handleClearHistory = async () => {
+    if (!confirm("Clear ALL prediction history?")) return;
+    try {
+      await clearHistory();
+      setToast("History cleared successfully");
+    } catch {
+      setToast("Failed to clear history");
+    }
+    setTimeout(() => setToast(null), 3000);
+  };
+
   return (
     <div>
       <div className="page-header">
-        <h1>Settings</h1>
-        <p>Manage and retrain the ML model</p>
+        <div className="page-header-text">
+          <h1>Settings</h1>
+          <p>Manage model and application settings</p>
+        </div>
       </div>
 
       <div className="card">
         <h2>Retrain Model</h2>
-        <p style={{ color: "#666", marginBottom: 16 }}>
-          Retrain the Linear Regression model on the current dataset.
-          This will overwrite the existing model.
+        <p style={{ color: "var(--text-secondary)", marginBottom: 16 }}>
+          Retrain the Linear Regression model on the current dataset. This will overwrite the existing model.
         </p>
-        <button
-          className="btn btn-primary"
-          onClick={handleRetrain}
-          disabled={loading}
-        >
+        <button className="btn btn-primary" onClick={handleRetrain} disabled={loading}>
           {loading ? "Retraining..." : "Retrain Model"}
         </button>
 
@@ -49,7 +58,7 @@ export default function SettingsPage() {
             <div className="metrics-grid" style={{ marginTop: 12 }}>
               <div className="metric-card">
                 <div className="value">{result.new_metrics.r2_score}</div>
-                <div className="label">New R² Score</div>
+                <div className="label">New R-Score</div>
               </div>
               <div className="metric-card">
                 <div className="value">{result.new_metrics.mae}</div>
@@ -62,7 +71,7 @@ export default function SettingsPage() {
             </div>
             {result.old_metrics && (
               <p style={{ marginTop: 12, fontSize: "0.85rem" }}>
-                Previous R²: {result.old_metrics.r2_score} → New R²: {result.new_metrics.r2_score}
+                Previous R: {result.old_metrics.r2_score} &rarr; New R: {result.new_metrics.r2_score}
               </p>
             )}
           </div>
@@ -70,28 +79,30 @@ export default function SettingsPage() {
       </div>
 
       <div className="card">
-        <h2>Model Info</h2>
+        <h2>Data Management</h2>
+        <p style={{ color: "var(--text-secondary)", marginBottom: 16 }}>
+          Clear all stored prediction history from the database.
+        </p>
+        <button className="btn btn-danger" onClick={handleClearHistory}>
+          Clear Prediction History
+        </button>
+      </div>
+
+      <div className="card">
+        <h2>Model Information</h2>
         <table className="data-table">
           <tbody>
-            <tr>
-              <td><strong>Algorithm</strong></td>
-              <td>Linear Regression</td>
-            </tr>
-            <tr>
-              <td><strong>Feature</strong></td>
-              <td>Study_Hours</td>
-            </tr>
-            <tr>
-              <td><strong>Target</strong></td>
-              <td>Marks</td>
-            </tr>
-            <tr>
-              <td><strong>Test Split</strong></td>
-              <td>80/20</td>
-            </tr>
+            <tr><td><strong>Algorithm</strong></td><td>Linear Regression</td></tr>
+            <tr><td><strong>Primary Feature</strong></td><td>Study_Hours</td></tr>
+            <tr><td><strong>Optional Features</strong></td><td>Attendance, Sleep_Hours, Previous_Score</td></tr>
+            <tr><td><strong>Target</strong></td><td>Marks (0-100)</td></tr>
+            <tr><td><strong>Test Split</strong></td><td>80/20</td></tr>
+            <tr><td><strong>Storage</strong></td><td>SQLite (predictions.db)</td></tr>
           </tbody>
         </table>
       </div>
+
+      {toast && <div className="toast toast-success">{toast}</div>}
     </div>
   );
 }
