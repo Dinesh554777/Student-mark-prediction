@@ -1,0 +1,233 @@
+You are an expert Python Data Scientist and Full Stack AI developer.
+
+Develop a complete Data Science project named "Student Marks Prediction" using Python.
+
+Project Goal:
+Predict a student's exam marks based on the number of study hours using Machine Learning.
+
+Requirements:
+
+1. Tech Stack
+- Python 3.x
+- Pandas
+- NumPy
+- Matplotlib
+- Scikit-learn
+- Joblib
+
+2. Project Structure
+
+Student-Marks-Prediction/
+│
+├── dataset/
+│   └── student_marks.csv
+│
+├── notebooks/
+│   └── EDA.ipynb
+│
+├── src/
+│   ├── data_preprocessing.py
+│   ├── train_model.py
+│   ├── predict.py
+│   └── utils.py
+│
+├── models/
+│   └── marks_model.pkl
+│
+├── outputs/
+│   ├── scatter_plot.png
+│   ├── regression_line.png
+│   └── evaluation.txt
+│
+├── requirements.txt
+├── README.md
+└── main.py
+
+3. Dataset
+
+Automatically generate student_marks.csv containing 100 realistic records.
+
+Columns:
+Study_Hours
+Marks
+
+Example
+
+Study_Hours,Marks
+1.5,20
+2.0,25
+2.5,28
+3.0,35
+4.5,48
+5.0,55
+6.0,63
+7.0,72
+8.0,82
+9.5,94
+
+Add random realistic values.
+
+4. Data Analysis
+
+Display
+
+Dataset information
+
+Shape
+
+Null values
+
+Data types
+
+Statistical summary
+
+Correlation
+
+5. Visualization
+
+Create
+
+Scatter Plot
+
+Regression Line
+
+Histogram
+
+Box Plot
+
+Save all figures inside outputs/.
+
+6. Data Preprocessing
+
+Check missing values
+
+Remove duplicates
+
+Split features and target
+
+Train-test split (80:20)
+
+7. Machine Learning
+
+Algorithm:
+Linear Regression
+
+Train the model.
+
+Save model as
+
+models/marks_model.pkl
+
+8. Model Evaluation
+
+Print
+
+MAE
+
+MSE
+
+RMSE
+
+R² Score
+
+Store results inside outputs/evaluation.txt.
+
+9. Prediction Script
+
+Create predict.py
+
+The user enters study hours.
+
+Example
+
+Enter Study Hours:
+6.5
+
+Output
+
+Predicted Marks: 68.42
+
+10. Main Program
+
+Display a menu
+
+==============================
+STUDENT MARKS PREDICTION
+==============================
+
+1. Train Model
+2. Predict Marks
+3. Exit
+
+11. Documentation
+
+Generate README.md including
+
+Project Description
+
+Objectives
+
+Technologies Used
+
+Folder Structure
+
+Installation
+
+How to Run
+
+Dataset Description
+
+Algorithm
+
+Results
+
+Future Enhancements
+
+12. requirements.txt
+
+Include all required libraries.
+
+13. Code Quality
+
+Use functions.
+
+Add comments.
+
+Use docstrings.
+
+Follow PEP8.
+
+Handle exceptions.
+
+14. Expected Output
+
+Training Accuracy
+
+Evaluation Metrics
+
+Prediction
+
+Graphs
+
+Saved Model
+
+15. Bonus Features
+
+Calculate prediction confidence.
+
+Show regression equation.
+
+Display feature importance (if applicable).
+
+Predict multiple students from a CSV file.
+
+16. Final Deliverables
+
+Produce the complete project with all source code, generated dataset, trained model placeholder (or instructions to generate it), README, requirements.txt, visualizations, and evaluation outputs.
+
+Ensure the project runs without errors using:
+
+pip install -r requirements.txt
+python main.py
+
+Generate production-quality, modular, beginner-friendly code with clear explanations and comments suitable for a college Data Science mini project.
