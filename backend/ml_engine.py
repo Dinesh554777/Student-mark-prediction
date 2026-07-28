@@ -14,19 +14,21 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import pandas as pd
 
-# Add project root to path
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, PROJECT_ROOT)
 
 MODEL_PATH = os.path.join(PROJECT_ROOT, "models", "marks_model.pkl")
+MULTI_MODEL_PATH = os.path.join(PROJECT_ROOT, "models", "multi_feature_model.pkl")
 DATASET_PATH = os.path.join(PROJECT_ROOT, "dataset", "student_marks.csv")
 
 _model = None
+_multi_model = None
 _metrics = None
+_chart_cache = None
 
 
 def get_model():
-    """Load or return cached model."""
+    """Load or return cached single-feature model."""
     global _model
     if _model is None:
         if not os.path.exists(MODEL_PATH):
@@ -35,11 +37,22 @@ def get_model():
     return _model
 
 
+def get_multi_model():
+    """Load or return cached multi-feature model."""
+    global _multi_model
+    if _multi_model is None:
+        if os.path.exists(MULTI_MODEL_PATH):
+            _multi_model = joblib.load(MULTI_MODEL_PATH)
+    return _multi_model
+
+
 def invalidate_model_cache():
     """Force model reload on next access."""
-    global _model, _metrics
+    global _model, _multi_model, _metrics, _chart_cache
     _model = None
+    _multi_model = None
     _metrics = None
+    _chart_cache = None
 
 
 def load_dataset():
@@ -47,6 +60,17 @@ def load_dataset():
     if not os.path.exists(DATASET_PATH):
         raise FileNotFoundError(f"Dataset not found at {DATASET_PATH}")
     return pd.read_csv(DATASET_PATH)
+
+
+def _build_multi_feature_dataset():
+    """Build a multi-feature dataset from the base dataset."""
+    df = load_dataset()
+    np.random.seed(42)
+    n = len(df)
+    df["Attendance"] = np.clip(50 + 5 * df["Study_Hours"] + np.random.normal(0, 10, n), 20, 100).round(1)
+    df["Sleep_Hours"] = np.clip(7 + np.random.normal(0, 1.5, n), 3, 12).round(1)
+    df["Previous_Score"] = np.clip(df["Marks"] + np.random.normal(0, 5, n), 5, 100).round(1)
+    return df
 
 
 def predict(study_hours: float) -> dict:
@@ -59,6 +83,32 @@ def predict(study_hours: float) -> dict:
         "study_hours": study_hours,
         "predicted_marks": round(prediction, 2),
         "equation": f"Marks = {slope:.2f} * Study_Hours + {intercept:.2f}",
+    }
+
+
+def predict_multi(study_hours: float, attendance: float = 0,
+                  sleep_hours: float = 0, previous_score: float = 0) -> dict:
+    """Predict marks using multi-feature model."""
+    multi_model = get_multi_model()
+    if multi_model is None:
+        result = predict(study_hours)
+        result["features_used"] = ["Study_Hours"]
+        return result
+
+    features = [[study_hours, attendance, sleep_hours, previous_score]]
+    prediction = multi_model.predict(features)[0]
+    coefs = multi_model.coef_
+    intercept = multi_model.intercept_
+
+    feature_names = ["Study_Hours", "Attendance", "Sleep_Hours", "Previous_Score"]
+    terms = [f"{coefs[i]:.2f} * {feature_names[i]}" for i in range(len(coefs))]
+    equation = f"Marks = {' + '.join(terms)} + {intercept:.2f}"
+
+    return {
+        "study_hours": study_hours,
+        "predicted_marks": round(prediction, 2),
+        "equation": equation,
+        "features_used": feature_names,
     }
 
 
@@ -102,8 +152,49 @@ def get_metrics() -> dict:
     return _metrics
 
 
+def get_recharts_data() -> dict:
+    """Get chart data formatted for Recharts."""
+    model = get_model()
+    df = load_dataset()
+    X = df["Study_Hours"].values
+    y = df["Marks"].values
+    y_pred = model.predict(X.reshape(-1, 1))
+
+    # Scatter data
+    scatter = [{"x": round(float(x), 1), "y": round(float(y_), 1)}
+               for x, y_ in zip(X, y)]
+
+    # Regression line
+    sort_idx = np.argsort(X)
+    regression_line = [{"x": round(float(X[i]), 1), "y": round(float(y_pred[i]), 1)}
+                       for i in sort_idx]
+
+    # Histograms
+    study_bins = np.histogram(X, bins=15)
+    marks_bins = np.histogram(y, bins=15)
+
+    study_dist = [{"name": f"{study_bins[1][i]:.1f}-{study_bins[1][i+1]:.1f}",
+                   "value": int(study_bins[0][i])}
+                  for i in range(len(study_bins[0]))]
+
+    marks_dist = [{"name": f"{marks_bins[1][i]:.0f}-{marks_bins[1][i+1]:.0f}",
+                   "value": int(marks_bins[0][i])}
+                  for i in range(len(marks_bins[0]))]
+
+    return {
+        "scatter": scatter,
+        "regression_line": regression_line,
+        "study_hours_dist": study_dist,
+        "marks_dist": marks_dist,
+    }
+
+
 def get_chart_data() -> dict:
-    """Generate chart data as base64-encoded images."""
+    """Generate chart data as base64-encoded images (cached)."""
+    global _chart_cache
+    if _chart_cache is not None:
+        return _chart_cache
+
     model = get_model()
     df = load_dataset()
     X = df[["Study_Hours"]].values
@@ -149,16 +240,48 @@ def get_chart_data() -> dict:
     histogram_b64 = _fig_to_base64(fig)
     plt.close(fig)
 
-    return {
+    _chart_cache = {
         "scatter": {"image": scatter_b64, "title": "Study Hours vs Marks"},
         "regression": {"image": regression_b64, "title": "Linear Regression Fit"},
         "histogram": {"image": histogram_b64, "title": "Feature Distributions"},
+    }
+    return _chart_cache
+
+
+def train_multi_feature_model() -> dict:
+    """Train and save the multi-feature model."""
+    global _multi_model
+
+    df = _build_multi_feature_dataset()
+    features = ["Study_Hours", "Attendance", "Sleep_Hours", "Previous_Score"]
+    X = df[features].values
+    y = df["Marks"].values
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+    model = LinearRegression()
+    model.fit(X_train, y_train)
+
+    os.makedirs(os.path.dirname(MULTI_MODEL_PATH), exist_ok=True)
+    joblib.dump(model, MULTI_MODEL_PATH)
+    _multi_model = model
+
+    y_pred = model.predict(X_test)
+    r2 = r2_score(y_test, y_pred)
+
+    return {
+        "r2_score": round(r2, 4),
+        "mae": round(mean_absolute_error(y_test, y_pred), 4),
+        "rmse": round(float(np.sqrt(mean_squared_error(y_test, y_pred))), 4),
+        "features": features,
+        "coefficients": {f: round(float(c), 4) for f, c in zip(features, model.coef_)},
+        "intercept": round(float(model.intercept_), 4),
     }
 
 
 def retrain_model() -> dict:
     """Retrain the model and return new metrics."""
-    global _model, _metrics
+    global _model, _metrics, _chart_cache
 
     old_metrics = get_metrics() if _model is not None else None
 
@@ -166,24 +289,21 @@ def retrain_model() -> dict:
     X = df[["Study_Hours"]].values
     y = df["Marks"].values
 
-    # Preprocessing
     df_clean = df.drop_duplicates()
     X = df_clean[["Study_Hours"]].values
     y = df_clean["Marks"].values
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-    # Train
     model = LinearRegression()
     model.fit(X_train, y_train)
 
-    # Save
     os.makedirs(os.path.dirname(MODEL_PATH), exist_ok=True)
     joblib.dump(model, MODEL_PATH)
 
-    # Update cache
     _model = model
-    _metrics = None  # Force recalculation
+    _metrics = None
+    _chart_cache = None
 
     new_metrics = get_metrics()
     new_metrics["old_metrics"] = old_metrics
